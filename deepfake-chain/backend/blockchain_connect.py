@@ -139,7 +139,7 @@ def upload_to_blockchain(file_data, blockchain_data=None):
 
         # Sign and send transaction
         signed_txn = web3.eth.account.sign_transaction(txn, private_key=PRIVATE_KEY)
-        tx_hash = web3.eth.send_raw_transaction(signed_txn.raw_transaction)
+        tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 
         print(f"✅ Uploaded hash: {file_hash}")

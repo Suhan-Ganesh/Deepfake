@@ -10,6 +10,7 @@ This system analyzes uploaded images and videos for deepfake detection, generate
 - ✅ Support for both authentic and deepfake media
 - ✅ Confidence scoring for detection results
 - ✅ Ensemble detection using multiple models for improved accuracy
+- ✅ Model training capabilities for all supported architectures
 
 ## Setup Instructions
 
@@ -74,6 +75,16 @@ The system now uses an ensemble approach that combines predictions from all avai
 - PyTorch models (EfficientNet-ViT, Xception)
 - The final prediction is an average of all model predictions
 - This approach provides better accuracy and robustness than using a single model
+
+## Training Your Own Models
+
+The system includes a comprehensive training script ([train_ensemble.py](file:///c:/Users/xxtri/Desktop/Deepfake/deepfake-chain/backend/train_ensemble.py)) that allows you to train all supported models:
+- Supports training MesoNet, MesoInception, EfficientNet-ViT, and Xception
+- Includes data loading, preprocessing, and augmentation
+- Provides performance metrics and model evaluation
+- Saves trained models in the correct format for immediate use
+
+See [TRAINING_GUIDE.md](file:///c:/Users/xxtri/Desktop/Deepfake/deepfake-chain/backend/TRAINING_GUIDE.md) for detailed training instructions.
 
 ## API Endpoints
 

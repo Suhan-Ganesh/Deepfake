@@ -47,10 +47,12 @@ class DeepfakeDetector:
         self.model_loaded = False
         self.force_fallback = force_fallback  # New parameter to force fallback mode
 
-        # Improved detection parameters
+        # Detection parameters
         self.detection_threshold = 0.5  # Threshold for classifying as deepfake
-        self.min_model_agreement = 0.6  # Minimum ratio of models that must agree for high confidence
-        self.confidence_boost_factor = 1.2  # Factor to boost confidence when models agree
+
+        # Performance tracking for best models
+        self.image_model_performance = {}  # Track model performance for images
+        self.video_model_performance = {}  # Track model performance for videos
 
         if not TENSORFLOW_AVAILABLE and not TORCH_AVAILABLE:
             return
@@ -288,33 +290,56 @@ class DeepfakeDetector:
             if self.model_loaded and not self.force_fallback:
                 predictions = []
                 model_details = []
+                model_confidences = []  # Track individual model confidences
+                
+                # Process TensorFlow models
                 for i, model in enumerate(self.models):
                     try:
                         pred = model.predict(img_array, verbose=0)
                         pred_value = float(pred[0][0])
                         if 0 <= pred_value <= 1:
                             predictions.append(pred_value)
+                            model_confidences.append((self.model_names[i], pred_value))
                             model_details.append(f"{self.model_names[i]}: {pred_value:.4f}")
                     except Exception:
                         pass
+                
+                # Process PyTorch models
                 for i, model in enumerate(self.advanced_models):
                     try:
                         is_deepfake, confidence = model.detect(image_data)
                         predictions.append(confidence)
+                        model_confidences.append((self.model_names[len(self.models) + i], confidence))
                         model_details.append(f"{self.model_names[len(self.models) + i]}: {confidence:.4f}")
                     except Exception:
                         pass
+                
                 if predictions:
                     confidence = float(np.mean(predictions))
-                    agreement_count = sum(1 for p in predictions if (p > self.detection_threshold) == (confidence > self.detection_threshold))
-                    agreement_ratio = agreement_count / len(predictions) if predictions else 0
-                    if agreement_ratio >= self.min_model_agreement:
-                        confidence = min(1.0, confidence * self.confidence_boost_factor)
                     is_deepfake = confidence > self.detection_threshold
-                    method = f"ensemble_{len(predictions)}_models"
+                    
+                    # Track best performing model for images
+                    if model_confidences:
+                        best_model = max(model_confidences, key=lambda x: x[1])
+                        best_model_name, best_model_confidence = best_model
+                        
+                        # Update performance tracking
+                        if best_model_name not in self.image_model_performance:
+                            self.image_model_performance[best_model_name] = []
+                        self.image_model_performance[best_model_name].append(best_model_confidence)
+                        
+                        # Find overall best model for images
+                        best_image_model = self._get_best_model_for_images()
+                        method = f"ensemble_{len(predictions)}_models"
+                        if best_image_model:
+                            method += f" (best: {best_image_model})"
+                    else:
+                        best_image_model = None
+                        method = f"ensemble_{len(predictions)}_models"
+                    
                     if model_details:
                         method += f" ({', '.join(model_details)})"
-                        method += f" (agreement: {agreement_ratio:.2f})"
+                        method += f" (average: {confidence:.4f})"
                     return is_deepfake, confidence, method
                 else:
                     return self._fallback_image_detection(img_array)
@@ -330,30 +355,64 @@ class DeepfakeDetector:
                 return False, 0.0, "preprocessing_failed"
             if self.model_loaded and not self.force_fallback:
                 frame_predictions = []
+                frame_model_predictions = []  # Track predictions per frame per model
+                
                 for frame in frames:
                     try:
                         frame_array = np.expand_dims(frame, axis=0)
                         predictions = []
-                        for model in self.models:
+                        frame_model_data = []  # Track model predictions for this frame
+                        
+                        # Process TensorFlow models
+                        for i, model in enumerate(self.models):
                             try:
                                 pred = model.predict(frame_array, verbose=0)
                                 pred_value = float(pred[0][0])
                                 if 0 <= pred_value <= 1:
                                     predictions.append(pred_value)
+                                    frame_model_data.append((self.model_names[i], pred_value))
                             except Exception:
                                 pass
+                        
                         if predictions:
-                            frame_predictions.append(float(np.mean(predictions)))
+                            frame_avg = float(np.mean(predictions))
+                            frame_predictions.append(frame_avg)
+                            frame_model_predictions.append(frame_model_data)
                     except Exception:
                         continue
+                
                 if frame_predictions:
                     confidence = float(np.mean(frame_predictions))
-                    agreement_count = sum(1 for p in frame_predictions if (p > self.detection_threshold) == (confidence > self.detection_threshold))
-                    agreement_ratio = agreement_count / len(frame_predictions) if frame_predictions else 0
-                    if agreement_ratio >= self.min_model_agreement:
-                        confidence = min(1.0, confidence * self.confidence_boost_factor)
                     is_deepfake = confidence > self.detection_threshold
-                    method = f"video_{len(frame_predictions)}_frames (frame_agreement: {agreement_ratio:.2f})"
+                    
+                    # Track best performing model for videos
+                    if frame_model_predictions:
+                        # Find best model across all frames
+                        model_performance = {}
+                        for frame_models in frame_model_predictions:
+                            if frame_models:
+                                best_in_frame = max(frame_models, key=lambda x: x[1])
+                                model_name, model_conf = best_in_frame
+                                if model_name not in model_performance:
+                                    model_performance[model_name] = []
+                                model_performance[model_name].append(model_conf)
+                        
+                        # Update video performance tracking
+                        for model_name, confidences in model_performance.items():
+                            if model_name not in self.video_model_performance:
+                                self.video_model_performance[model_name] = []
+                            self.video_model_performance[model_name].extend(confidences)
+                        
+                        # Find overall best model for videos
+                        best_video_model = self._get_best_model_for_videos()
+                        method = f"video_{len(frame_predictions)}_frames"
+                        if best_video_model:
+                            method += f" (best: {best_video_model})"
+                    else:
+                        best_video_model = None
+                        method = f"video_{len(frame_predictions)}_frames"
+                    
+                    method += f" (average: {confidence:.4f})"
                     return is_deepfake, confidence, method
                 else:
                     return self._fallback_video_detection(frames)
@@ -421,10 +480,81 @@ class DeepfakeDetector:
         except Exception:
             return False, 0.5, "fallback_video_error"
 
-    def set_detection_parameters(self, threshold=0.5, min_agreement=0.6, confidence_boost=1.2):
+    def set_detection_parameters(self, threshold=0.5):
         self.detection_threshold = max(0.0, min(1.0, threshold))
-        self.min_model_agreement = max(0.0, min(1.0, min_agreement))
-        self.confidence_boost_factor = max(1.0, confidence_boost)
+
+    def _get_best_model_for_images(self):
+        """Determine the best performing model for images based on average confidence"""
+        if not self.image_model_performance:
+            return None
+        
+        model_averages = {}
+        for model_name, confidences in self.image_model_performance.items():
+            if confidences:
+                model_averages[model_name] = np.mean(confidences)
+        
+        if not model_averages:
+            return None
+            
+        best_model = max(model_averages, key=model_averages.get)
+        return best_model
+
+    def _get_best_model_for_videos(self):
+        """Determine the best performing model for videos based on average confidence"""
+        if not self.video_model_performance:
+            return None
+        
+        model_averages = {}
+        for model_name, confidences in self.video_model_performance.items():
+            if confidences:
+                model_averages[model_name] = np.mean(confidences)
+        
+        if not model_averages:
+            return None
+            
+        best_model = max(model_averages, key=model_averages.get)
+        return best_model
+
+    def get_model_performance_stats(self):
+        """Get performance statistics for all models"""
+        stats = {
+            'image_models': {},
+            'video_models': {}
+        }
+        
+        # Image model statistics
+        for model_name, confidences in self.image_model_performance.items():
+            if confidences:
+                stats['image_models'][model_name] = {
+                    'count': len(confidences),
+                    'average_confidence': float(np.mean(confidences)),
+                    'min_confidence': float(np.min(confidences)),
+                    'max_confidence': float(np.max(confidences))
+                }
+        
+        # Video model statistics
+        for model_name, confidences in self.video_model_performance.items():
+            if confidences:
+                stats['video_models'][model_name] = {
+                    'count': len(confidences),
+                    'average_confidence': float(np.mean(confidences)),
+                    'min_confidence': float(np.min(confidences)),
+                    'max_confidence': float(np.max(confidences))
+                }
+        
+        return stats
+
+    def reset_model_performance_stats(self):
+        """Reset all model performance statistics"""
+        self.image_model_performance = {}
+        self.video_model_performance = {}
+
+    def get_best_models(self):
+        """Get the best performing models for images and videos"""
+        return {
+            'best_image_model': self._get_best_model_for_images(),
+            'best_video_model': self._get_best_model_for_videos()
+        }
 
 
 def get_detector(force_fallback=False, model_paths=None):

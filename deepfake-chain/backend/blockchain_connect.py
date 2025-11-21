@@ -1,6 +1,17 @@
 from web3 import Web3
 import hashlib
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(override=True)
+
+# Debug: Print loaded environment variables
+# import os
+# print("DEBUG: Loaded INFURA_URL:", os.getenv("INFURA_URL", "NOT SET"))
+# print("DEBUG: Loaded CONTRACT_ADDRESS:", os.getenv("CONTRACT_ADDRESS", "NOT SET"))
+# print("DEBUG: Loaded ACCOUNT_ADDRESS:", os.getenv("ACCOUNT_ADDRESS", "NOT SET"))
+# print("DEBUG: Loaded PRIVATE_KEY:", "SET" if os.getenv("PRIVATE_KEY") else "NOT SET")
 
 # ------------------------------------
 # 🔗 INFURA / METAMASK CONFIGURATION
@@ -10,12 +21,26 @@ CONTRACT_ADDRESS_STR = os.getenv("CONTRACT_ADDRESS", "")
 ACCOUNT_ADDRESS_STR = os.getenv("ACCOUNT_ADDRESS", "")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 
+# Debug print to see what values are loaded
+# print(f"DEBUG: INFURA_URL={INFURA_URL}")
+# print(f"DEBUG: CONTRACT_ADDRESS_STR={CONTRACT_ADDRESS_STR}")
+# print(f"DEBUG: ACCOUNT_ADDRESS_STR={ACCOUNT_ADDRESS_STR}")
+# print(f"DEBUG: PRIVATE_KEY={'SET' if PRIVATE_KEY else 'NOT SET'}")
+
 # Check if blockchain is configured
 BLOCKCHAIN_ENABLED = bool(INFURA_URL and CONTRACT_ADDRESS_STR and ACCOUNT_ADDRESS_STR and PRIVATE_KEY)
 
+# Additional check to ensure we're not using placeholder values
+if CONTRACT_ADDRESS_STR.startswith("0xYOUR_") or ACCOUNT_ADDRESS_STR.startswith("0xYOUR_") or INFURA_URL.endswith("YOUR_PROJECT_ID"):
+    BLOCKCHAIN_ENABLED = False
+
 if BLOCKCHAIN_ENABLED:
-    CONTRACT_ADDRESS = Web3.to_checksum_address(CONTRACT_ADDRESS_STR)
-    ACCOUNT_ADDRESS = Web3.to_checksum_address(ACCOUNT_ADDRESS_STR)
+    try:
+        CONTRACT_ADDRESS = Web3.to_checksum_address(CONTRACT_ADDRESS_STR)
+        ACCOUNT_ADDRESS = Web3.to_checksum_address(ACCOUNT_ADDRESS_STR)
+    except Exception as e:
+        print(f"❌ Error processing blockchain addresses: {e}")
+        BLOCKCHAIN_ENABLED = False
     
     # Connect to blockchain
     web3 = Web3(Web3.HTTPProvider(INFURA_URL))
@@ -37,18 +62,36 @@ else:
 abi = [
     {
         "inputs": [
-            {"internalType": "string", "name": "_hash", "type": "string"}
+            {"internalType": "string", "name": "_fileHash", "type": "string"}
         ],
-        "name": "storeHash",
+        "name": "registerMedia",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "getAllHashes",
+        "name": "getAllRecords",
         "outputs": [
-            {"internalType": "string[]", "name": "", "type": "string[]"}
+            {
+                "components": [
+                    {"internalType": "string", "name": "fileHash", "type": "string"},
+                    {"internalType": "address", "name": "uploader", "type": "address"},
+                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"}
+                ],
+                "internalType": "struct DeepfakeAuth.MediaRecord[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalRecords",
+        "outputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"}
         ],
         "stateMutability": "view",
         "type": "function"
@@ -87,11 +130,11 @@ def upload_to_blockchain(file_data, blockchain_data=None):
 
         # Create transaction
         nonce = web3.eth.get_transaction_count(ACCOUNT_ADDRESS)
-        txn = contract.functions.storeHash(data_str).build_transaction({
+        txn = contract.functions.registerMedia(data_str).build_transaction({
             'from': ACCOUNT_ADDRESS,
             'nonce': nonce,
-            'gas': 200000,
-            'gasPrice': web3.to_wei('10', 'gwei')
+            'gas': 300000,
+            'gasPrice': web3.to_wei('20', 'gwei')
         })
 
         # Sign and send transaction
@@ -132,7 +175,7 @@ def view_blockchain():
             timestamp = r[2]
             result.append({
                 "fileHash": file_hash,
-                "uploader": uploader,
+                "uploader": web3.to_checksum_address(uploader),
                 "timestamp": int(timestamp)
             })
 
@@ -151,4 +194,20 @@ def view_blockchain():
     except Exception as e:
         print("❌ View blockchain error:", str(e))
         raise
+
+# ------------------------------------
+# 🔢 Get total records count
+# ------------------------------------
+def get_total_records():
+    try:
+        # If blockchain is not configured, return 0
+        if not BLOCKCHAIN_ENABLED:
+            return 0
+        
+        # Fetch total records count
+        count = contract.functions.totalRecords().call()
+        return int(count)
+    except Exception as e:
+        print("❌ Get total records error:", str(e))
+        return 0
 

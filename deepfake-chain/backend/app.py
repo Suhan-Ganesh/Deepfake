@@ -50,9 +50,7 @@ else:
     # Removed print statement to prevent console output
     # Set optimal parameters for trained models
     detector.set_detection_parameters(
-        threshold=0.5,
-        min_agreement=0.7,
-        confidence_boost=1.3
+        threshold=0.5
     )
 
 app = Flask(__name__)
@@ -61,7 +59,17 @@ CORS(app)
 # ✅ Root route (test connection)
 @app.route('/')
 def home():
-    return jsonify({"status": "Backend running successfully 🚀"}), 200
+    return jsonify({
+        "status": "Backend running successfully 🚀",
+        "endpoints": {
+            "POST /upload": "Upload image/video for deepfake detection",
+            "GET /chain": "View blockchain data",
+            "GET /total-records": "Get total blockchain records count",
+            "GET /model-stats": "Get model performance statistics",
+            "GET /best-models": "Get best performing models for images and videos",
+            "POST /reset-model-stats": "Reset model performance statistics"
+        }
+    }), 200
 
 
 # ✅ Upload image/video to blockchain with deepfake detection
@@ -132,6 +140,43 @@ def view_data():
         return jsonify({"chain": chain_data}), 200
     except Exception as e:
         # Removed print statements to prevent console output
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Get model performance statistics
+@app.route('/model-stats', methods=['GET'])
+def get_model_stats():
+    try:
+        stats = detector.get_model_performance_stats()
+        return jsonify({"model_stats": stats}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Get best performing models
+@app.route('/best-models', methods=['GET'])
+def get_best_models():
+    try:
+        best_models = detector.get_best_models()
+        return jsonify({"best_models": best_models}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Reset model performance statistics
+@app.route('/reset-model-stats', methods=['POST'])
+def reset_model_stats():
+    try:
+        detector.reset_model_performance_stats()
+        return jsonify({"message": "Model performance statistics reset successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Get total blockchain records count
+@app.route('/total-records', methods=['GET'])
+def get_total_records():
+    try:
+        from blockchain_connect import get_total_records
+        count = get_total_records()
+        return jsonify({"total_records": count}), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 

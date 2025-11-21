@@ -61,22 +61,22 @@ else:
 # ------------------------------------
 abi = [
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "string",
         "name": "fileHash",
         "type": "string"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "uploader",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "timestamp",
         "type": "uint256"
@@ -86,16 +86,16 @@ abi = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "string",
         "name": "fileHash",
         "type": "string"

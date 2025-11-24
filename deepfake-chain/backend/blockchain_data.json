@@ -318,5 +318,45 @@
     "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0420, MesoNet: 0.6839, EfficientNet-ViT: 0.0633, Xception: 0.4672) (average: 0.3141)",
     "id": 32,
     "timestamp": 1764013493
+  },
+  {
+    "hash": "8aeab1fe376a2623f39d5e1072575ab497ec5424183317c5b10ee5fbb599366a",
+    "filename": "Gemini_Generated_Image_y96ls4y96ls4y96l.png",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.6979,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.3866, MesoNet: 0.9586, EfficientNet-ViT: 1.0000, Xception: 0.4464) (average: 0.6979)",
+    "id": 33,
+    "timestamp": 1764014177
+  },
+  {
+    "hash": "cde8c693fbc0dd5366e64013c571cfd5da7a2927eab2b204b2fb0af18e122644",
+    "filename": "real00240.jpg",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.7303,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.9765, MesoNet: 0.8445, EfficientNet-ViT: 0.6713, Xception: 0.4289) (average: 0.7303)",
+    "id": 34,
+    "timestamp": 1764014371
+  },
+  {
+    "hash": "05ec7cf7d3df30b1c21c30128bf73dd6236d176a04dbf77af7560c7fd9435641",
+    "filename": "real00772.jpg",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.6015,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.9949, MesoNet: 0.9283, EfficientNet-ViT: 0.0301, Xception: 0.4526) (average: 0.6015)",
+    "id": 35,
+    "timestamp": 1764014551
+  },
+  {
+    "hash": "05ec7cf7d3df30b1c21c30128bf73dd6236d176a04dbf77af7560c7fd9435641",
+    "filename": "real00772.jpg",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.6015,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.9949, MesoNet: 0.9283, EfficientNet-ViT: 0.0301, Xception: 0.4526) (average: 0.6015)",
+    "id": 36,
+    "timestamp": 1764014586
   }
 ]

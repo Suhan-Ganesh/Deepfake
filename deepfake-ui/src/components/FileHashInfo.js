@@ -81,26 +81,18 @@ const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp, transaction
         <div>
           <p className="text-indigo-300 text-sm font-semibold mb-2">Blockchain Verification</p>
           
-          {transactionHash && transactionHash.startsWith("0x") && (
-            <button
-              onClick={openEtherscanTransaction}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>View Transaction on Etherscan</span>
-            </button>
-          )}
-          
           <button
-            onClick={openEtherscanContract}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
+            onClick={transactionHash && transactionHash.startsWith("0x") ? openEtherscanTransaction : openEtherscanContract}
+            className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>View Contract on Etherscan</span>
+            <span>
+              {transactionHash && transactionHash.startsWith("0x") 
+                ? "View Transaction on Etherscan" 
+                : "View Contract on Etherscan"}
+            </span>
           </button>
           
           <p className="text-gray-300 font-mono text-xs break-all mt-2">{CONTRACT_ADDRESS}</p>

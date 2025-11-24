@@ -340,6 +340,15 @@ function App() {
               <div className="pt-2 border-t border-indigo-800">
                 <p className="text-yellow-300 font-semibold">{uploadResult.duplicate_message}</p>
                 <p className="text-indigo-300 text-xs mt-1">The file has already been analyzed and stored in the blockchain.</p>
+                <button
+                  onClick={() => setShowBlockchainInfo(true)}
+                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg mt-3 transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>View Details</span>
+                </button>
               </div>
             ) : (
               <>
@@ -374,7 +383,7 @@ function App() {
         </div>
       )}
 
-      {showBlockchainInfo && uploadResult && !uploadResult.duplicate && uploadResult.transaction_hash && (
+      {showBlockchainInfo && uploadResult && uploadResult.transaction_hash && (
         <BlockchainViewer 
           fileHash={uploadResult.file_hash}
           isDeepfake={uploadResult.is_deepfake}

@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Any
 import os
 from PIL import Image
 import io
+import time
 
 # Try to import TensorFlow components
 try:
@@ -33,9 +34,23 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
+# Try to import Hugging Face components for enhanced detection
+try:
+    from huggingface_hub import InferenceClient
+    HUGGINGFACE_AVAILABLE = True
+except ImportError:
+    HUGGINGFACE_AVAILABLE = False
+
+# Try to import the enhanced deepfake detector
+try:
+    from enhanced_deepfake_detector import EnhancedDeepfakeDetector
+    ENHANCED_DETECTOR_AVAILABLE = True
+except ImportError:
+    ENHANCED_DETECTOR_AVAILABLE = False
+
 
 class DeepfakeDetector:
-    def __init__(self, model_path=None, force_fallback=False, model_paths=None):
+    def __init__(self, model_path=None, force_fallback=False, model_paths=None, use_enhanced_detection=False):
         """
         Initialize the deepfake detector.
         If no model is provided, it will use a simple CNN-based detection.
@@ -46,6 +61,30 @@ class DeepfakeDetector:
         self.model_names = []  # Track model names for ensemble
         self.model_loaded = False
         self.force_fallback = force_fallback  # New parameter to force fallback mode
+        self.use_enhanced_detection = use_enhanced_detection  # Use enhanced Hugging Face models
+        self.hf_client = None
+        self.enhanced_detector = None
+        
+        # Initialize Hugging Face client if enhanced detection is enabled
+        if self.use_enhanced_detection and HUGGINGFACE_AVAILABLE:
+            hf_token = os.environ.get("HF_TOKEN")
+            if hf_token:
+                try:
+                    self.hf_client = InferenceClient(
+                        provider="hf-inference",
+                        api_key=hf_token
+                    )
+                except Exception:
+                    self.hf_client = None
+        
+        # Initialize enhanced detector if available
+        if ENHANCED_DETECTOR_AVAILABLE:
+            try:
+                hf_token = os.environ.get("HF_TOKEN")
+                if hf_token:
+                    self.enhanced_detector = EnhancedDeepfakeDetector(hf_token=hf_token)
+            except Exception:
+                self.enhanced_detector = None
 
         # Detection parameters
         self.detection_threshold = 0.5  # Threshold for classifying as deepfake
@@ -54,7 +93,7 @@ class DeepfakeDetector:
         self.image_model_performance = {}  # Track model performance for images
         self.video_model_performance = {}  # Track model performance for videos
 
-        if not TENSORFLOW_AVAILABLE and not TORCH_AVAILABLE:
+        if not TENSORFLOW_AVAILABLE and not TORCH_AVAILABLE and not self.hf_client and not self.enhanced_detector:
             return
 
         if force_fallback:
@@ -282,7 +321,135 @@ class DeepfakeDetector:
         except Exception:
             return None
 
+    def _run_hf_inference(self, image: Image.Image, model_name: str) -> list:
+        """
+        Run inference on Hugging Face models
+        
+        Args:
+            image (PIL.Image): Preprocessed image
+            model_name (str): Name of the model to use
+            
+        Returns:
+            list: Model predictions
+        """
+        if not self.hf_client:
+            return []
+            
+        try:
+            if model_name == "ai_image_detector":
+                model_id = "umm-maybe/AI-image-detector"
+            elif model_name == "efficientnet_b7":
+                model_id = "google/efficientnet-b7"
+            else:
+                return []
+                
+            result = self.hf_client.image_classification(image, model=model_id)
+            return result
+        except Exception as e:
+            return []
+
+    def _extract_deepfake_confidence(self, predictions: list, model_name: str) -> float:
+        """
+        Extract deepfake confidence from model predictions
+        
+        Args:
+            predictions (list): Model predictions
+            model_name (str): Name of the model
+            
+        Returns:
+            float: Confidence score for deepfake detection
+        """
+        if not predictions:
+            return 0.5  # Neutral confidence if no predictions
+            
+        try:
+            if model_name == "ai_image_detector":
+                # For AI-image-detector, look for "artificial" or similar labels
+                for pred in predictions:
+                    if "artificial" in pred["label"].lower() or "fake" in pred["label"].lower():
+                        return pred["score"]
+                    elif "real" in pred["label"].lower():
+                        return 1.0 - pred["score"]  # Invert for deepfake confidence
+            
+            elif model_name == "efficientnet_b7":
+                # For EfficientNet-B7, we might need to interpret the labels
+                for pred in predictions:
+                    if "fake" in pred["label"].lower() or "deepfake" in pred["label"].lower():
+                        return pred["score"]
+                return predictions[0]["score"] if predictions else 0.5
+                
+        except Exception as e:
+            pass
+            
+        return 0.5  # Default neutral confidence
+
+    def _detect_with_enhanced_models(self, image_data):
+        """
+        Detect deepfakes using enhanced Hugging Face models
+        
+        Args:
+            image_data (bytes): Image data
+            
+        Returns:
+            tuple: (is_deepfake, confidence, method)
+        """
+        # Prefer the new enhanced detector if available
+        if self.enhanced_detector:
+            try:
+                # Save image data to a temporary file
+                temp_path = "temp_enhanced_analysis.jpg"
+                with open(temp_path, "wb") as f:
+                    f.write(image_data)
+                
+                # Run analysis with enhanced detector
+                result = self.enhanced_detector.analyze_image(temp_path)
+                
+                # Clean up temporary file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                
+                if "error" not in result:
+                    confidence = result["final_prediction"]
+                    is_deepfake = result["is_deepfake"]
+                    method = f"enhanced_detector (raw: {result['raw_ensemble_score']:.4f}, calibrated: {confidence:.4f})"
+                    return is_deepfake, confidence, method
+            except Exception as e:
+                pass  # Fall back to HF client approach
+        
+        # Fallback to direct HF client approach
+        if not self.hf_client:
+            return False, 0.0, "enhanced_detection_unavailable"
+            
+        try:
+            # Load image
+            image = Image.open(io.BytesIO(image_data))
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Run inference on both models
+            ai_detector_result = self._run_hf_inference(image, "ai_image_detector")
+            effnet_result = self._run_hf_inference(image, "efficientnet_b7")
+            
+            # Extract confidences
+            ai_confidence = self._extract_deepfake_confidence(ai_detector_result, "ai_image_detector")
+            effnet_confidence = self._extract_deepfake_confidence(effnet_result, "efficientnet_b7")
+            
+            # Average the confidences
+            confidence = (ai_confidence + effnet_confidence) / 2.0
+            is_deepfake = confidence > self.detection_threshold
+            
+            method = f"enhanced_hf_models (AI-detector: {ai_confidence:.4f}, EfficientNet-B7: {effnet_confidence:.4f})"
+            
+            return is_deepfake, confidence, method
+            
+        except Exception as e:
+            return False, 0.0, f"enhanced_detection_error: {str(e)}"
+
     def detect_image(self, image_data):
+        # If enhanced detection is enabled and available, use it
+        if self.use_enhanced_detection and (self.enhanced_detector or self.hf_client):
+            return self._detect_with_enhanced_models(image_data)
+        
         try:
             img_array = self.preprocess_image(image_data)
             if img_array is None:

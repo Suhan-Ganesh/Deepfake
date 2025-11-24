@@ -1,0 +1,9 @@
+[
+  {
+    "file_hash": "test123",
+    "is_deepfake": true,
+    "confidence": 0.95,
+    "id": 1,
+    "timestamp": 1763834285
+  }
+]

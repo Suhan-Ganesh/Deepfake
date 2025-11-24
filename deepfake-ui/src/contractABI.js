@@ -1,4 +1,5 @@
-[
+// Updated ABI for the DeepfakeAuth smart contract
+export const contractABI = [
   {
     "anonymous": false,
     "inputs": [
@@ -56,6 +57,29 @@
     "type": "event"
   },
   {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "fileHash",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isDeepfake",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "confidenceScore",
+        "type": "uint256"
+      }
+    ],
+    "name": "registerMedia",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getAllRecords",
     "outputs": [
@@ -90,19 +114,6 @@
         "internalType": "struct DeepfakeAuth.MediaRecord[]",
         "name": "",
         "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getNextId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -225,6 +236,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getNextId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -264,29 +288,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "fileHash",
-        "type": "string"
-      },
-      {
-        "internalType": "bool",
-        "name": "isDeepfake",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "confidenceScore",
-        "type": "uint256"
-      }
-    ],
-    "name": "registerMedia",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "totalRecords",
     "outputs": [
@@ -299,4 +300,6 @@
     "stateMutability": "view",
     "type": "function"
   }
-]
+];
+
+export default contractABI;

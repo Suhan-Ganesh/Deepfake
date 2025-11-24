@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 contract DeepfakeAuth {
     struct MediaRecord {
         string fileHash;
+        bool isDeepfake;
+        uint256 confidenceScore;  // Stored as integer (multiply by 10000 to preserve 4 decimal places)
         address uploader;
         uint256 timestamp;
     }
@@ -15,13 +17,19 @@ contract DeepfakeAuth {
 
     event MediaRegistered(
         string fileHash,
+        bool isDeepfake,
+        uint256 confidenceScore,
         address indexed uploader,
         uint256 timestamp
     );
     
     event RecordAdded(uint256 id, string fileHash); // Event for off-chain tracking
 
-    function registerMedia(string memory fileHash) public {
+    function registerMedia(
+        string memory fileHash,
+        bool isDeepfake,
+        uint256 confidenceScore
+    ) public {
         require(bytes(fileHash).length > 0, "File hash cannot be empty");
         require(!hashExists[fileHash], "File hash already exists");
 
@@ -29,6 +37,8 @@ contract DeepfakeAuth {
         
         MediaRecord memory newRecord = MediaRecord({
             fileHash: fileHash,
+            isDeepfake: isDeepfake,
+            confidenceScore: confidenceScore,
             uploader: msg.sender,
             timestamp: block.timestamp
         });
@@ -43,7 +53,7 @@ contract DeepfakeAuth {
             nextId++; // Prevent overflow checks for gas efficiency
         }
 
-        emit MediaRegistered(fileHash, msg.sender, block.timestamp);
+        emit MediaRegistered(fileHash, isDeepfake, confidenceScore, msg.sender, block.timestamp);
         emit RecordAdded(currentId, fileHash); // Emit event for tracking
     }
 

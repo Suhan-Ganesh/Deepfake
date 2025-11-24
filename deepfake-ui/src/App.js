@@ -3,6 +3,9 @@ import axios from "axios";
 import SplashScreen from "./components/SplashScreen";
 import AuthScreen from "./components/AuthScreen";
 import Logo from "./components/Logo";
+import BlockchainRecords from "./components/BlockchainRecords";
+import BlockchainViewer from "./components/BlockchainViewer";
+import FileHashInfo from "./components/FileHashInfo";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -12,6 +15,7 @@ function App() {
   const [uploadResult, setUploadResult] = useState(null);
   const [chainData, setChainData] = useState(null);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [showBlockchainInfo, setShowBlockchainInfo] = useState(false);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -28,17 +32,8 @@ function App() {
     setFile(null);
     setUploadResult(null);
     setChainData(null);
+    setShowBlockchainInfo(false);
   };
-
-  // Show splash screen
-  if (showSplash) {
-    return <SplashScreen onFinish={handleSplashFinish} />;
-  }
-
-  // Show authentication screen
-  if (!isAuthenticated) {
-    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
-  }
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -55,10 +50,22 @@ function App() {
 
     try {
       setUploadResult(null); // Clear previous results
+      setChainData(null); // Hide blockchain records when uploading new file
+      setShowBlockchainInfo(false); // Hide blockchain info when uploading new file
       
       const res = await axios.post("http://127.0.0.1:5000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
+      // If we have a transaction hash, check its status
+      if (res.data.transaction_hash && !res.data.duplicate) {
+        try {
+          const statusRes = await axios.get(`http://127.0.0.1:5000/transaction-status/${res.data.transaction_hash}`);
+          console.log("Transaction status:", statusRes.data);
+        } catch (statusErr) {
+          console.error("Error checking transaction status:", statusErr);
+        }
+      }
 
       setUploadResult(res.data);
       
@@ -70,12 +77,22 @@ function App() {
       alert("Upload failed! " + (err.response?.data?.error || err.message));
     }
   };
+      
+  // Show splash screen
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
+  // Show authentication screen
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
 
   const fetchChain = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/chain");
-
-      setChainData(res.data);
+      // Simply hide the blockchain records when clicking the button
+      setChainData(null);
+      setShowBlockchainInfo(!showBlockchainInfo);
     } catch (err) {
       console.error(err);
       alert("Failed to fetch chain!");
@@ -148,7 +165,7 @@ function App() {
               <h4 className="text-sm font-semibold text-indigo-200 mb-2 flex items-center">
                 <svg className="w-4 h-4 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                  <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd"/>
+                  <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 100 2h1a1 1 0 100-2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd"/>
                 </svg>
                 Connected Wallet
               </h4>
@@ -240,55 +257,61 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center">
 
-      <div className="p-6 rounded-2xl shadow-lg w-full max-w-md fade-in" style={{
-        background: 'rgba(30, 27, 75, 0.8)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(139, 92, 246, 0.3)'
-      }}>
-        <input
-          type="file"
-          accept="image/*,video/*"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-white border-2 rounded-lg cursor-pointer mb-4 p-2 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 file:cursor-pointer file:font-semibold"
-          style={{
-            background: 'rgba(99, 102, 241, 0.1)',
-            borderColor: 'rgba(139, 92, 246, 0.4)'
-          }}
-        />
+        <div className="p-6 rounded-2xl shadow-lg w-full max-w-md fade-in" style={{
+          background: 'rgba(30, 27, 75, 0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(139, 92, 246, 0.3)'
+        }}>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleFileChange}
+            className="block w-full text-sm text-white border-2 rounded-lg cursor-pointer mb-4 p-2 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 file:cursor-pointer file:font-semibold"
+            style={{
+              background: 'rgba(99, 102, 241, 0.1)',
+              borderColor: 'rgba(139, 92, 246, 0.4)'
+            }}
+          />
 
-        <button
-          onClick={handleUpload}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-lg transition font-semibold shadow-md hover:shadow-lg pulse-glow flex items-center justify-center space-x-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <span>🔍 Analyze & Upload to Blockchain</span>
-        </button>
+          <button
+            onClick={handleUpload}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-lg transition font-semibold shadow-md hover:shadow-lg pulse-glow flex items-center justify-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>🔍 Analyze & Upload to Blockchain</span>
+          </button>
 
-        <button
-          onClick={fetchChain}
-          className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-3 rounded-lg mt-4 transition shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>View Blockchain</span>
-        </button>
-      </div>
+          <button
+            onClick={fetchChain}
+            className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-3 rounded-lg mt-4 transition shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>{showBlockchainInfo ? "Hide Blockchain" : "View Blockchain"}</span>
+          </button>
+        </div>
 
       {uploadResult && (
-        <div className="mt-6 p-4 rounded-xl w-full max-w-md border-2 shadow-xl fade-in"
+        <div className="mt-6 p-4 rounded-xl w-full max-w-md shadow-xl fade-in"
              style={{
                background: 'rgba(30, 27, 75, 0.8)',
                backdropFilter: 'blur(20px)',
-               borderColor: uploadResult.is_deepfake ? '#ef4444' : '#10b981'
+               border: '1px solid rgba(255, 165, 0, 0.5)',
+               boxShadow: '0 0 15px rgba(255, 165, 0, 0.3)'
              }}>
-          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-            {uploadResult.is_deepfake ? (
+          <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+            {uploadResult.duplicate ? (
+              <>
+                <span className="text-2xl">ℹ️</span>
+                <span className="text-yellow-400">Duplicate File Detected</span>
+              </>
+            ) : uploadResult.is_deepfake ? (
               <>
                 <span className="text-2xl">⚠️</span>
-                <span className="text-red-400">Deepfake Detected</span>
+                <span className="text-orange-500">Deepfake Detected</span>
               </>
             ) : (
               <>
@@ -298,50 +321,74 @@ function App() {
             )}
           </h2>
           
-          <div className="space-y-2 text-sm">
-            <p><b className="text-indigo-300">Filename:</b> <span className="text-white">{uploadResult.filename}</span></p>
-            <p><b className="text-indigo-300">File Type:</b> <span className="text-white capitalize">{uploadResult.file_type}</span></p>
-            <p><b className="text-indigo-300">File Hash:</b> <span className="text-white font-mono text-xs break-all">{uploadResult.file_hash}</span></p>
-            
-            <div className="pt-2 border-t border-indigo-800">
-              <p className="mb-1"><b className="text-indigo-300">Detection Confidence:</b></p>
-              <div className="w-full rounded-full h-3" style={{ background: 'rgba(99, 102, 241, 0.2)' }}>
-                <div 
-                  className="h-3 rounded-full transition-all"
-                  style={{
-                    width: `${uploadResult.confidence * 100}%`,
-                    backgroundColor: uploadResult.is_deepfake ? '#ef4444' : '#10b981'
-                  }}
-                ></div>
-              </div>
-              <p className="text-xs text-indigo-300 mt-1">
-                {(uploadResult.confidence * 100).toFixed(2)}% 
-                {uploadResult.is_deepfake ? ' likely deepfake' : ' likely authentic'}
-              </p>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="text-indigo-300 font-semibold">Filename</p>
+              <p className="text-white mt-1">{uploadResult.filename}</p>
             </div>
             
-            <p><b className="text-indigo-300">Detection Method:</b> <span className="text-white">{uploadResult.detection_method}</span></p>
-            <p><b className="text-indigo-300">Transaction Hash:</b> <span className="text-white font-mono text-xs break-all">{uploadResult.transaction_hash}</span></p>
+            <div>
+              <p className="text-indigo-300 font-semibold">File Type</p>
+              <p className="text-white capitalize mt-1">{uploadResult.file_type}</p>
+            </div>
+            
+            <div>
+              <p className="text-indigo-300 font-semibold">File Hash</p>
+              <p className="text-blue-200 font-mono text-xs break-all mt-1">{uploadResult.file_hash}</p>
+            </div>
+            
+            {uploadResult.duplicate ? (
+              <div className="pt-2 border-t border-indigo-800">
+                <p className="text-yellow-300 font-semibold">{uploadResult.duplicate_message}</p>
+                <p className="text-indigo-300 text-xs mt-1">The file has already been analyzed and stored in the blockchain.</p>
+              </div>
+            ) : (
+              <>
+                <div className="pt-2 border-t border-indigo-800">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-white font-semibold">Detection Confidence</p>
+                    <p className={uploadResult.is_deepfake ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>
+                      {(uploadResult.confidence * 100).toFixed(2)}%
+                    </p>
+                  </div>
+                  <div className="w-full rounded-full h-2.5" style={{ background: 'rgba(99, 102, 241, 0.2)' }}>
+                    <div 
+                      className="h-2.5 rounded-full transition-all"
+                      style={{
+                        width: `${uploadResult.confidence * 100}%`,
+                        backgroundColor: uploadResult.is_deepfake ? '#ef4444' : '#10b981'
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-indigo-300 text-xs mt-1">
+                    {uploadResult.is_deepfake ? 'Likely deepfake' : 'Likely authentic'}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-indigo-300 font-semibold">Detection Method</p>
+                  <p className="text-white mt-1">{uploadResult.detection_method}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {chainData && (
-        <div className="mt-6 p-4 rounded-xl w-full max-w-3xl overflow-x-auto shadow-lg fade-in" style={{
-          background: 'rgba(30, 27, 75, 0.8)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(139, 92, 246, 0.3)'
-        }}>
-          <h2 className="text-xl font-semibold mb-2 text-white">Blockchain Data</h2>
-          <pre className="text-sm p-3 rounded text-indigo-100" style={{
-            background: 'rgba(99, 102, 241, 0.1)',
-            border: '1px solid rgba(139, 92, 246, 0.3)'
-          }}>{JSON.stringify(chainData, null, 2)}</pre>
-        </div>
+      {showBlockchainInfo && uploadResult && !uploadResult.duplicate && uploadResult.transaction_hash && (
+        <BlockchainViewer 
+          fileHash={uploadResult.file_hash}
+          isDeepfake={uploadResult.is_deepfake}
+          confidence={uploadResult.confidence}
+        />
       )}
-      </div>
-      </div>
+
+      {chainData && (
+        <BlockchainRecords records={chainData.chain} />
+      )}
     </div>
+  </div>
+  </div>
   );
 }
 

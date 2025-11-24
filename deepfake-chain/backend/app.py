@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from blockchain_connect import upload_to_blockchain, view_blockchain
+from local_storage import upload_with_local_fallback, view_with_local_fallback
 from deepfake_detector import get_detector
 import hashlib
 import mimetypes
@@ -111,12 +112,29 @@ def upload_file():
             'detection_method': detection_method
         }
 
-        # Upload to blockchain
-        tx_hash = upload_to_blockchain(file_data, blockchain_data)
+        # Upload to blockchain with local storage fallback
+        print("📤 Uploading to blockchain with local fallback...")
+        result = upload_with_local_fallback(file_data, blockchain_data)
+        print(f"✅ Blockchain upload process completed with result: {result}")
+        
+        # Check if result is a duplicate detection response
+        if isinstance(result, dict) and result.get("status") == "duplicate":
+            return jsonify({
+                "message": "File analysis completed",
+                "duplicate": True,
+                "duplicate_message": result["message"],
+                "transaction_hash": result["transaction_hash"],
+                "file_hash": result["file_hash"],
+                "filename": file.filename,
+                "file_type": file_type,
+                "is_deepfake": is_deepfake,
+                "confidence": round(confidence, 4),
+                "detection_method": detection_method
+            }), 200
 
         return jsonify({
             "message": "File successfully analyzed and uploaded to blockchain",
-            "transaction_hash": tx_hash,
+            "transaction_hash": result,
             "file_hash": file_hash,
             "filename": file.filename,
             "file_type": file_type,
@@ -126,21 +144,25 @@ def upload_file():
         }), 200
 
     except Exception as e:
-        # Removed print statements to prevent console output
+        print(f"❌ Upload error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 
 # ✅ View blockchain data
 @app.route('/chain', methods=['GET'])  # 👈 changed from '/view' → '/chain'
 def view_data():
     try:
-        chain_data = view_blockchain()
+        print("🔄 Fetching blockchain data with local fallback...")
+        chain_data = view_with_local_fallback()
+        print(f"✅ Returning {len(chain_data)} records")
         return jsonify({"chain": chain_data}), 200
     except Exception as e:
-        # Removed print statements to prevent console output
-        return jsonify({"error": str(e)}), 500
+        print(f"❌ Error fetching blockchain data: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to fetch blockchain data: {str(e)}"}), 500
 
 # ✅ Get model performance statistics
 @app.route('/model-stats', methods=['GET'])
@@ -176,6 +198,90 @@ def get_total_records():
         from blockchain_connect import get_total_records
         count = get_total_records()
         return jsonify({"total_records": count}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ✅ Check if a file hash exists in the blockchain
+@app.route('/check-hash/<file_hash>', methods=['GET'])
+def check_file_hash(file_hash):
+    try:
+        print(f"🔍 Checking if hash {file_hash} exists in blockchain...")
+        
+        # Try blockchain first
+        from blockchain_connect import check_duplicate_by_hash
+        exists_in_blockchain = check_duplicate_by_hash(file_hash)
+        
+        if exists_in_blockchain:
+            # Get the record details
+            from blockchain_connect import view_blockchain
+            blockchain_data = view_blockchain()
+            matching_record = None
+            
+            for record in blockchain_data:
+                if record.get("fileHash", "").lower() == file_hash.lower():
+                    matching_record = record
+                    break
+            
+            if matching_record:
+                return jsonify({
+                    "found": True,
+                    "message": "File found in blockchain",
+                    "record": matching_record
+                }), 200
+            else:
+                # This shouldn't happen, but just in case
+                return jsonify({
+                    "found": True,
+                    "message": "File hash exists in blockchain (but record details not found)",
+                    "record": None
+                }), 200
+        else:
+            # Check local storage as fallback
+            from local_storage import get_local_records
+            local_data = get_local_records()
+            matching_record = None
+            
+            for record in local_data:
+                record_hash = record.get("hash", record.get("file_hash", ""))
+                if record_hash.lower() == file_hash.lower():
+                    matching_record = {
+                        "fileHash": record_hash,
+                        "isDeepfake": record.get("is_deepfake", False),
+                        "confidenceScore": record.get("confidence", 0.0),
+                        "uploader": record.get("uploader", "0x0000000000000000000000000000000000000000"),
+                        "timestamp": record.get("timestamp", 0)
+                    }
+                    break
+            
+            if matching_record:
+                return jsonify({
+                    "found": True,
+                    "message": "File found in local storage",
+                    "record": matching_record
+                }), 200
+            else:
+                return jsonify({
+                    "found": False,
+                    "message": "File not found in blockchain or local storage"
+                }), 200
+                
+    except Exception as e:
+        print(f"❌ Error checking file hash: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to check file hash: {str(e)}"}), 500
+
+
+# ✅ Check transaction status
+@app.route('/transaction-status/<tx_hash>', methods=['GET'])
+def check_transaction_status(tx_hash):
+    try:
+        from blockchain_connect import check_transaction_status
+        status = check_transaction_status(tx_hash)
+        if status is None:
+            return jsonify({"error": "Could not check transaction status"}), 500
+        return jsonify(status), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

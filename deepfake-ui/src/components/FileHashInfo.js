@@ -1,11 +1,21 @@
 import React from "react";
 import { CONTRACT_ADDRESS } from "../config";
 
-const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp }) => {
-  // Function to open Etherscan
-  const openEtherscan = () => {
+const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp, transactionHash }) => {
+  // Function to open Etherscan contract page
+  const openEtherscanContract = () => {
     const etherscanUrl = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`;
     window.open(etherscanUrl, "_blank");
+  };
+  
+  // Function to open Etherscan transaction page (if transaction hash is available)
+  const openEtherscanTransaction = () => {
+    if (transactionHash && transactionHash.startsWith("0x")) {
+      const etherscanUrl = `https://sepolia.etherscan.io/tx/${transactionHash}`;
+      window.open(etherscanUrl, "_blank");
+    } else {
+      openEtherscanContract();
+    }
   };
 
   return (
@@ -70,8 +80,21 @@ const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp }) => {
         {/* Blockchain Verification Section */}
         <div>
           <p className="text-indigo-300 text-sm font-semibold mb-2">Blockchain Verification</p>
+          
+          {transactionHash && transactionHash.startsWith("0x") && (
+            <button
+              onClick={openEtherscanTransaction}
+              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>View Transaction on Etherscan</span>
+            </button>
+          )}
+          
           <button
-            onClick={openEtherscan}
+            onClick={openEtherscanContract}
             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +102,14 @@ const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp }) => {
             </svg>
             <span>View Contract on Etherscan</span>
           </button>
-          <p className="text-gray-300 font-mono text-xs break-all">{CONTRACT_ADDRESS}</p>
+          
+          <p className="text-gray-300 font-mono text-xs break-all mt-2">{CONTRACT_ADDRESS}</p>
+          
+          <div className="mt-3 p-2 rounded-lg bg-indigo-900 bg-opacity-30">
+            <p className="text-xs text-indigo-200">
+              <span className="font-semibold">Tip:</span> On the contract page, look for the "MediaRegistered" events to find your file record.
+            </p>
+          </div>
         </div>
       </div>
     </div>

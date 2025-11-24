@@ -5,7 +5,6 @@ import AuthScreen from "./components/AuthScreen";
 import Logo from "./components/Logo";
 import BlockchainRecords from "./components/BlockchainRecords";
 import BlockchainViewer from "./components/BlockchainViewer";
-import FileHashInfo from "./components/FileHashInfo";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -380,6 +379,7 @@ function App() {
           fileHash={uploadResult.file_hash}
           isDeepfake={uploadResult.is_deepfake}
           confidence={uploadResult.confidence}
+          transactionHash={uploadResult.transaction_hash}
         />
       )}
 
@@ -388,7 +388,7 @@ function App() {
       )}
     </div>
   </div>
-  </div>
+</div>
   );
 }
 

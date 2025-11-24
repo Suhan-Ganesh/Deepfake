@@ -228,5 +228,95 @@
     "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.7868, MesoNet: 0.7357, EfficientNet-ViT: 1.0000, Xception: 0.4749) (average: 0.7494)",
     "id": 23,
     "timestamp": 1763978182
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.5796,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.9691, Xception: 0.5017) (average: 0.5796)",
+    "id": 24,
+    "timestamp": 1763999559
+  },
+  {
+    "hash": "825cfdefc02c917df65cae3b91883d3fa0eb080cedc87e9619866a603543ce17",
+    "filename": "df01254.jpg",
+    "file_type": "image",
+    "is_deepfake": true,
+    "confidence": 0.55,
+    "detection_method": "ensemble_4_models (best: EfficientNet-ViT) (MesoNet: 0.0420, MesoNet: 0.6839, EfficientNet-ViT: 1.0000, Xception: 0.4741) (average: 0.5500)",
+    "id": 25,
+    "timestamp": 1764006817
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.3453,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0300, Xception: 0.5035) (average: 0.3453)",
+    "id": 26,
+    "timestamp": 1764008673
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.3453,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0300, Xception: 0.5035) (average: 0.3453)",
+    "id": 27,
+    "timestamp": 1764011073
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.3453,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0300, Xception: 0.5035) (average: 0.3453)",
+    "id": 28,
+    "timestamp": 1764011235
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.342,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0347, Xception: 0.4859) (average: 0.3420)",
+    "id": 29,
+    "timestamp": 1764011545
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.342,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0347, Xception: 0.4859) (average: 0.3420)",
+    "id": 30,
+    "timestamp": 1764012083
+  },
+  {
+    "hash": "ab1e881cd875b295e0c33e46ca464bd34ab5bf8e7629e0d0621a84159020832d",
+    "filename": "df00204.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.342,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0577, MesoNet: 0.7898, EfficientNet-ViT: 0.0347, Xception: 0.4859) (average: 0.3420)",
+    "id": 31,
+    "timestamp": 1764013432
+  },
+  {
+    "hash": "825cfdefc02c917df65cae3b91883d3fa0eb080cedc87e9619866a603543ce17",
+    "filename": "df01254.jpg",
+    "file_type": "image",
+    "is_deepfake": false,
+    "confidence": 0.3141,
+    "detection_method": "ensemble_4_models (best: MesoNet) (MesoNet: 0.0420, MesoNet: 0.6839, EfficientNet-ViT: 0.0633, Xception: 0.4672) (average: 0.3141)",
+    "id": 32,
+    "timestamp": 1764013493
   }
 ]

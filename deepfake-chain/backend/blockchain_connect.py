@@ -1,6 +1,7 @@
 from web3 import Web3
 import hashlib
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -43,12 +44,18 @@ else:
     ACCOUNT_ADDRESS = None
 
 # ------------------------------------
-# 🔐 CONTRACT ABI (copy from Remix)
+# 🔐 CONTRACT ABI (loaded from JSON file)
 # ------------------------------------
-abi = [
-    # ABI content as you provided, omitted here for brevity
-    # Please copy the full ABI JSON you posted, unchanged
-]
+def load_contract_abi():
+    """Load contract ABI from JSON file"""
+    try:
+        with open('contract_abi.json', 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Error loading contract ABI: {e}")
+        return []
+
+abi = load_contract_abi()
 
 # Get contract instance if blockchain is enabled
 if BLOCKCHAIN_ENABLED:
@@ -117,7 +124,7 @@ def upload_to_blockchain(file_data, blockchain_data=None):
             ).build_transaction({
                 'from': ACCOUNT_ADDRESS,
                 'nonce': nonce,
-                'gas': 300000,
+                'gas': 3000000,
                 'gasPrice': web3.to_wei('20', 'gwei')
             })
         except Exception as e:
@@ -131,7 +138,7 @@ def upload_to_blockchain(file_data, blockchain_data=None):
                 ).build_transaction({
                     'from': ACCOUNT_ADDRESS,
                     'nonce': nonce,
-                    'gas': 500000,
+                    'gas': 3000000,
                     'gasPrice': web3.to_wei('20', 'gwei')
                 })
                 print(f"📦 Transaction built with higher gas")
@@ -224,6 +231,7 @@ def upload_with_local_fallback(file_data, blockchain_data=None):
     # Save to local storage first
     if blockchain_data:
         try:
+            from local_storage import save_local_record
             local_id = save_local_record(blockchain_data)  # Ensure this function exists and imported
         except Exception:
             pass
@@ -240,3 +248,32 @@ def upload_with_local_fallback(file_data, blockchain_data=None):
         return result
     except Exception:
         return "0x" + "0" * 62 + "local"  # Mock hash for local fallback
+
+# ------------------------------------
+# 🔍 Check transaction status
+# ------------------------------------
+def check_transaction_status(tx_hash):
+    """Check the status of a transaction"""
+    try:
+        if not BLOCKCHAIN_ENABLED or not web3:
+            return None
+            
+        # Remove any prefix that might indicate local storage
+        if tx_hash.startswith("0x") and len(tx_hash) > 66:  # 0x + 64 hex chars
+            clean_tx_hash = tx_hash[:66]  # 0x + 64 chars
+        else:
+            clean_tx_hash = tx_hash
+            
+        # Check if it's a valid transaction hash
+        if not clean_tx_hash.startswith("0x") or len(clean_tx_hash) != 66:
+            return None
+            
+        tx_receipt = web3.eth.get_transaction_receipt(clean_tx_hash)
+        if tx_receipt is None:
+            return {"status": "pending", "message": "Transaction is pending"}
+        elif tx_receipt.status == 1:
+            return {"status": "success", "message": "Transaction successful"}
+        else:
+            return {"status": "failed", "message": "Transaction failed"}
+    except Exception as e:
+        return {"status": "error", "message": f"Could not check transaction: {str(e)}"}

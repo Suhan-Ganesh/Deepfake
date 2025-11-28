@@ -2,19 +2,28 @@ import React from "react";
 import { CONTRACT_ADDRESS } from "../config";
 
 const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp, transactionHash }) => {
-  // Function to open Etherscan contract page
-  const openEtherscanContract = () => {
-    const etherscanUrl = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`;
+  // Function to open Etherscan contract page with file hash and transaction hash search
+  const openEtherscanWithSearch = () => {
+    // Create a search URL that includes both file hash and transaction hash
+    const searchParams = new URLSearchParams();
+    if (fileHash) {
+      searchParams.set('a', fileHash);
+    }
+    if (transactionHash && transactionHash.startsWith("0x")) {
+      searchParams.set('tx', transactionHash);
+    }
+    
+    const etherscanUrl = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}?${searchParams.toString()}`;
     window.open(etherscanUrl, "_blank");
   };
   
-  // Function to open Etherscan transaction page (if transaction hash is available)
+  // Function to open Etherscan transaction page (if transaction hash is available and valid)
   const openEtherscanTransaction = () => {
     if (transactionHash && transactionHash.startsWith("0x") && !transactionHash.includes("duplicate") && !transactionHash.includes("local")) {
       const etherscanUrl = `https://sepolia.etherscan.io/tx/${transactionHash}`;
       window.open(etherscanUrl, "_blank");
     } else {
-      openEtherscanContract();
+      openEtherscanWithSearch();
     }
   };
 
@@ -84,31 +93,19 @@ const FileHashInfo = ({ fileHash, isDeepfake, confidence, timestamp, transaction
         <div>
           <p className="text-indigo-300 text-sm font-semibold mb-2">Blockchain Verification</p>
           
-          {isDuplicateFile ? (
-            <button
-              onClick={openEtherscanContract}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Search for File on Etherscan</span>
-            </button>
-          ) : (
-            <button
-              onClick={transactionHash && transactionHash.startsWith("0x") ? openEtherscanTransaction : openEtherscanContract}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>
-                {transactionHash && transactionHash.startsWith("0x") 
-                  ? "View Transaction on Etherscan" 
-                  : "View Contract on Etherscan"}
-              </span>
-            </button>
-          )}
+          <button
+            onClick={isDuplicateFile ? openEtherscanWithSearch : openEtherscanTransaction}
+            className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white py-2 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center justify-center space-x-2 mb-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              {isDuplicateFile 
+                ? "Search File on Etherscan" 
+                : "View Transaction on Etherscan"}
+            </span>
+          </button>
           
           <p className="text-gray-300 font-mono text-xs break-all mt-2">{CONTRACT_ADDRESS}</p>
           
